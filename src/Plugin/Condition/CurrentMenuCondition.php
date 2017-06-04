@@ -80,8 +80,16 @@ class CurrentMenuCondition extends ConditionPluginBase implements ContainerFacto
     if (!$this->configuration['menu']) {
       return TRUE;
     }
+    try {
+      $currentUrl = Url::fromRoute('<current>')->toString();
+    }
+    catch (\Exception $e) {
+      // The administration page has a broken URL and it breaks if we do not
+      // catch this.
+      return TRUE;
+    }
     return $this->getMenuLinkStorage()->getQuery()
-      ->condition('link.uri', Url::fromRoute('<current>')->toString())
+      ->condition('link.uri', $currentUrl)
       ->condition('menu_name', $this->configuration['menu'])
       ->range(0, 1)
       ->count()
