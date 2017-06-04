@@ -113,6 +113,7 @@ class CurrentMenuCondition extends ConditionPluginBase implements ContainerFacto
    * @return \Drupal\Core\Entity\EntityStorageInterface
    */
   public function getMenuLinkStorage() {
-    return $this->entityTypeManager->getStorage('menu');
+    return $this->entityTypeManager->getStorage('menu_link_content');
   }
+
 }
