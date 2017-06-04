@@ -1,0 +1,7 @@
+name: Menu Condition
+type: module
+description: 'Provides a menu condition plugin.'
+package: menu
+core: 8.x
+dependencies:
+  - menu_link_content
