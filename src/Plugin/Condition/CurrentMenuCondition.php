@@ -3,6 +3,7 @@
 namespace Drupal\menu_condition\Plugin\condition;
 
 use Drupal\Core\Condition\ConditionPluginBase;
+use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
@@ -19,6 +20,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * )
  */
 class CurrentMenuCondition extends ConditionPluginBase implements ContainerFactoryPluginInterface {
+
+  use DependencySerializationTrait;
 
   /**
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
@@ -103,10 +106,10 @@ class CurrentMenuCondition extends ConditionPluginBase implements ContainerFacto
   public function summary() {
     $args = ['@menu' => $this->getMenuStorage()->load($this->configuration['menu'])->label()];
     if ($this->isNegated()) {
-      return $this->t('The current page does not have a menu link in not @menu', $args);
+      return $this->t('The current page does not have a menu link in @menu', $args);
     }
 
-    return $this->t('The current page has a menu link in in @menu', $args);
+    return $this->t('The current page has a menu link in @menu', $args);
   }
 
   /**
