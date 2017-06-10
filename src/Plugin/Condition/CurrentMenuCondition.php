@@ -62,8 +62,9 @@ class CurrentMenuCondition extends ConditionPluginBase implements ContainerFacto
     $form['menu'] = [
       '#type' => 'select',
       '#title' => $this->t('Menu'),
-      '#default_value' => $this->configuration['Menu'],
+      '#default_value' => $this->configuration['menu'],
       '#options' => array_diff_key($menus, menu_list_system_menus()),
+      '#empty_option' => t('None'),
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }
@@ -83,21 +84,12 @@ class CurrentMenuCondition extends ConditionPluginBase implements ContainerFacto
     if (!$this->configuration['menu']) {
       return TRUE;
     }
-    try {
-      $currentUrl = Url::fromRoute('<current>')->toString();
-    }
-    catch (\Exception $e) {
-      // The administration page has a broken URL and it breaks if we do not
-      // catch this.
-      return TRUE;
-    }
     return $this->getMenuLinkStorage()->getQuery()
-      ->condition('link.uri', $currentUrl)
+      ->condition('link.uri', \Drupal::request()->getPathInfo())
       ->condition('menu_name', $this->configuration['menu'])
       ->range(0, 1)
       ->count()
       ->execute();
-
   }
 
   /**
