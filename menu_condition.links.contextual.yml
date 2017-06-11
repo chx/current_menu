@@ -1,0 +1,4 @@
+current_menu_place:
+  title: 'Add node in this menu'
+  route_name: 'node.add_page'
+  group: 'current_menu'

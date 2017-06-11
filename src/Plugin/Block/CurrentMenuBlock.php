@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\menu_condition\Plugin\Block;
+namespace Drupal\current_menu\Plugin\Block;
 
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Cache\Cache;
@@ -110,7 +110,11 @@ class CurrentMenuBlock extends BlockBase implements ContainerFactoryPluginInterf
         ['callable' => 'menu.default_tree_manipulators:generateIndexAndSort'],
       ];
       $tree = $this->menuTree->transform($tree, $manipulators);
-      return $this->menuTree->build($tree);
+      $build = $this->menuTree->build($tree);
+      $build['#contextual_links'] = [
+        'current_menu' => ['route_parameters' => []],
+      ];
+      return $build;
     }
     return [];
   }

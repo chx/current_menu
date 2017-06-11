@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\menu_condition\Plugin\condition;
+namespace Drupal\current_menu\Plugin\Condition;
 
 use Drupal\Core\Condition\ConditionPluginBase;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;

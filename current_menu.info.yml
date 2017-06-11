@@ -1,0 +1,7 @@
+name: Current Menu
+type: module
+description: 'Provides current menu plugins and cache context.'
+package: menu
+core: 8.x
+dependencies:
+  - menu_link_content
