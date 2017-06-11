@@ -4,12 +4,11 @@ namespace Drupal\current_menu\Plugin\Block;
 
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Cache\Cache;
-use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Menu\MenuLinkTreeInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\current_menu\Cache\CurrentMenuCacheContext;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Provides the current menu block
@@ -26,16 +25,6 @@ use Symfony\Component\HttpFoundation\RequestStack;
 class CurrentMenuBlock extends BlockBase implements ContainerFactoryPluginInterface {
 
   /**
-   * @var \Symfony\Component\HttpFoundation\RequestStack
-   */
-  protected $requestStack;
-
-  /**
-   * @var \Drupal\Core\Entity\EntityStorageInterface
-   */
-  protected $menuLinkStorage;
-
-  /**
    * @var \Drupal\Core\Menu\MenuLinkTreeInterface
    */
   protected $menuTree;
@@ -44,6 +33,11 @@ class CurrentMenuBlock extends BlockBase implements ContainerFactoryPluginInterf
    * @var string
    */
   protected $menuName;
+
+  /**
+   * @var \Drupal\current_menu\Cache\CurrentMenuCacheContext
+   */
+  protected $currentMenuCacheContext;
 
   /**
    * CurrentMenuBlock constructor.
@@ -55,10 +49,9 @@ class CurrentMenuBlock extends BlockBase implements ContainerFactoryPluginInterf
    * @param \Drupal\Core\Entity\EntityStorageInterface $menuLinkStorage
    * @param \Drupal\Core\Menu\MenuLinkTreeInterface $menuTree
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, RequestStack $requestStack, EntityStorageInterface $menuLinkStorage, MenuLinkTreeInterface $menuTree)  {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, CurrentMenuCacheContext $currentMenuCacheContext, MenuLinkTreeInterface $menuTree)  {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
-    $this->requestStack = $requestStack;
-    $this->menuLinkStorage = $menuLinkStorage;
+    $this->currentMenuCacheContext = $currentMenuCacheContext;
     $this->menuTree = $menuTree;
   }
 
@@ -68,8 +61,7 @@ class CurrentMenuBlock extends BlockBase implements ContainerFactoryPluginInterf
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('request_stack'),
-      $container->get('entity_type.manager')->getStorage('menu_link_content'),
+      $container->get('cache_context.current_menu'),
       $container->get('menu.link_tree')
     );
   }
@@ -156,19 +148,7 @@ class CurrentMenuBlock extends BlockBase implements ContainerFactoryPluginInterf
    */
   protected function getMenuName() {
     if (!isset($this->menuName)) {
-      $menuLLinkIds = $this->menuLinkStorage->getQuery()
-        ->condition('link.uri', 'entity:node/' . $this->getContextValue('node')->id())
-        ->condition('menu_name', $this->configuration['prefix'], 'STARTS_WITH')
-        ->range(0, 1)
-        ->execute();
-      if ($menuLLinkIds) {
-        /** @var \Drupal\Core\Menu\MenuLinkInterface $menuLink */
-        $menuLink = $this->menuLinkStorage->load(reset($menuLLinkIds));
-        $this->menuName = $menuLink->getMenuName();
-      }
-      else {
-        $this->menuName = '';
-      }
+      $this->menuName = $this->currentMenuCacheContext->getContext($this->configuration['prefix']);
     }
 
     return $this->menuName;

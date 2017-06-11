@@ -4,17 +4,12 @@ namespace Drupal\current_menu\Cache;
 
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Cache\Context\CacheContextInterface;
-use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Path\PathMatcherInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Url;
 
 class CurrentMenuCacheContext implements CacheContextInterface {
-
-  /**
-   * @var \Drupal\Core\Entity\EntityStorageInterface
-   */
-  protected $menuLinkStorage;
 
   /**
    * @var \Drupal\Core\Routing\RouteMatchInterface
@@ -26,23 +21,28 @@ class CurrentMenuCacheContext implements CacheContextInterface {
    */
   protected $pathMatcher;
 
-  public function __construct(RouteMatchInterface $routeMatch, PathMatcherInterface $pathMatcher, EntityStorageInterface $menuLinkStorage) {
+  /**
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  public function __construct(RouteMatchInterface $routeMatch, PathMatcherInterface $pathMatcher, EntityTypeManagerInterface $entityTypeManager) {
     $this->routeMatch = $routeMatch;
     $this->pathMatcher = $pathMatcher;
-    $this->menuLinkStorage = $menuLinkStorage;
+    $this->entityTypeManager = $entityTypeManager;
   }
 
   /**
    * {@inheritdoc}
    */
   public static function getLabel() {
-    return t('User');
+    return t('Current menu');
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getContext($prefix = NULL) {
+  public function getContext($prefix = NULL, $op = 'STARTS_WITH') {
     if ($this->pathMatcher->isFrontPage()) {
       $uri = 'internal:/';
     }
@@ -55,14 +55,14 @@ class CurrentMenuCacheContext implements CacheContextInterface {
       }
     }
     if (isset($uri)) {
-      $menuLLinkIds = $this->menuLinkStorage->getQuery()
+      $menuLinkStorage = $this->entityTypeManager->getStorage('menu_link_content');
+      $menuLLinkIds = $menuLinkStorage->getQuery()
         ->condition('link.uri', $uri)
-        ->condition('menu_name', (string) $prefix, 'STARTS_WITH')
+        ->condition('menu_name', (string) $prefix, $op)
         ->range(0, 1)
         ->execute();
-      if ($menuLLinkIds) {
-        /** @var \Drupal\Core\Menu\MenuLinkInterface $menuLink */
-        $menuLink = $this->menuLinkStorage->load(reset($menuLLinkIds));
+      /** @var \Drupal\Core\Menu\MenuLinkInterface $menuLink */
+      if ($menuLLinkIds && ($menuLink = $menuLinkStorage->load(reset($menuLLinkIds)))) {
         return $menuLink->getMenuName();
       }
     }
