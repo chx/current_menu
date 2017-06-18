@@ -17,9 +17,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   id = "current_menu_block",
  *   admin_label = @Translation("Current menu block"),
  *   category = @Translation("Menus"),
- *   context = {
- *     "node" = @ContextDefinition("entity:node", label = @Translation("Node"))
- *   }
  * )
  */
 class CurrentMenuBlock extends BlockBase implements ContainerFactoryPluginInterface {
@@ -104,7 +101,9 @@ class CurrentMenuBlock extends BlockBase implements ContainerFactoryPluginInterf
       $tree = $this->menuTree->transform($tree, $manipulators);
       $build = $this->menuTree->build($tree);
       $build['#contextual_links'] = [
-        'current_menu' => ['route_parameters' => []],
+        'menu' => [
+          'route_parameters' => ['menu' => $this->getMenuName()]
+        ],
       ];
       return $build;
     }
@@ -136,7 +135,7 @@ class CurrentMenuBlock extends BlockBase implements ContainerFactoryPluginInterf
     // trail of the rendered menu.
     // Additional cache contexts, e.g. those that determine link text or
     // accessibility of a menu, will be bubbled automatically.
-    $cacheContexts = parent::getCacheContexts();
+    $cacheContexts = Cache::mergeContexts(parent::getCacheContexts(), ['current_menu:' .  $this->configuration['prefix']]);
     if ($this->getMenuName()) {
       $cacheContexts = Cache::mergeContexts($cacheContexts, ['route.menu_active_trails:' . $this->getMenuName()]);
     }
