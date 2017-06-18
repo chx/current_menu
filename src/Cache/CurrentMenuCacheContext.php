@@ -40,29 +40,17 @@ class CurrentMenuCacheContext implements CacheContextInterface {
    * {@inheritdoc}
    */
   public function getContext($prefix = NULL, $op = 'STARTS_WITH') {
+    $return = '';
     if ($routeName = $this->routeMatch->getRouteName()) {
-      $n = strlen($prefix);
       $prefix = (string) $prefix;
       $routeParameters = $this->routeMatch->getRawParameters()->all();
       asort($routeParameters);
-      $storage = &$this->cache[$routeName][serialize($routeParameters)][$prefix][$op];
-      if (!isset($storage)) {
-        $storage = '';
-        foreach ($this->menuLinkManager->loadLinksByRoute($routeName, $routeParameters) as $link) {
-          $menuName = $link->getMenuName();
-          $comparisonValue = $menuName;
-          if ($op === 'STARTS_WITH') {
-            $comparisonValue = substr($comparisonValue, 0, $n);
-          }
-          if ($comparisonValue === $prefix) {
-            $storage = $menuName;
-            break;
-          }
-        }
+      $return = &$this->cache[$routeName][serialize($routeParameters)][$prefix][$op];
+      if (!isset($return)) {
+        $return = $this->getMenuName($prefix, $op, $routeName, $routeParameters);
       }
-      return $storage;
     }
-    return '';
+    return $return;
   }
 
   /**
@@ -70,6 +58,29 @@ class CurrentMenuCacheContext implements CacheContextInterface {
    */
   public function getCacheableMetadata() {
     return new CacheableMetadata();
+  }
+
+  /**
+   * @param $prefix
+   * @param $op
+   * @param $routeName
+   * @param $routeParameters
+   *
+   * @return string
+   */
+  protected function getMenuName($prefix, $op, $routeName, $routeParameters) {
+    $n = strlen($prefix);
+    foreach ($this->menuLinkManager->loadLinksByRoute($routeName, $routeParameters) as $link) {
+      $menuName = $link->getMenuName();
+      $comparisonValue = $menuName;
+      if ($op === 'STARTS_WITH') {
+        $comparisonValue = substr($comparisonValue, 0, $n);
+      }
+      if ($comparisonValue === $prefix) {
+        return $menuName;
+      }
+    }
+    return '';
   }
 
 }
