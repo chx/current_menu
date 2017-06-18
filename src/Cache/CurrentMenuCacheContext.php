@@ -2,12 +2,11 @@
 
 namespace Drupal\current_menu\Cache;
 
+use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Cache\Context\CacheContextInterface;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Path\PathMatcherInterface;
+use Drupal\Core\Database\Connection;
 use Drupal\Core\Routing\RouteMatchInterface;
-use Drupal\Core\Url;
 
 class CurrentMenuCacheContext implements CacheContextInterface {
 
@@ -17,19 +16,13 @@ class CurrentMenuCacheContext implements CacheContextInterface {
   protected $routeMatch;
 
   /**
-   * @var \Drupal\Core\Path\PathMatcherInterface
+   * @var \Drupal\Core\Database\Connection
    */
-  protected $pathMatcher;
+  protected $connection;
 
-  /**
-   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
-   */
-  protected $entityTypeManager;
-
-  public function __construct(RouteMatchInterface $routeMatch, PathMatcherInterface $pathMatcher, EntityTypeManagerInterface $entityTypeManager) {
+  public function __construct(RouteMatchInterface $routeMatch, Connection $connection) {
     $this->routeMatch = $routeMatch;
-    $this->pathMatcher = $pathMatcher;
-    $this->entityTypeManager = $entityTypeManager;
+    $this->connection = $connection;
   }
 
   /**
@@ -43,30 +36,22 @@ class CurrentMenuCacheContext implements CacheContextInterface {
    * {@inheritdoc}
    */
   public function getContext($prefix = NULL, $op = 'STARTS_WITH') {
-    if ($this->pathMatcher->isFrontPage()) {
-      $uri = 'internal:/';
-    }
-    elseif ($routeName = $this->routeMatch->getRouteName()) {
-      if ($routeName == 'entity.node.canonical') {
-        $uri = 'entity:node/' . $this->routeMatch->getRawParameter('node');
+    if ($routeName = $this->routeMatch->getRouteName()) {
+      $paramKey = '';
+      if ($routeParameters = $this->routeMatch->getRawParameters()->all()) {
+        asort($routeParameters);
+        $paramKey = UrlHelper::buildQuery($routeParameters);
       }
-      else {
-        $uri = 'internal:' . Url::fromRouteMatch($this->routeMatch)->toString();
+      $query = $this->connection->select('menu_tree', 'm');
+      $query->addField('m', 'menu_name');
+      $query->condition('route_name', $routeName);
+      $query->condition('route_param_key', $paramKey);
+      if ($prefix) {
+        $query->condition('menu_name', $this->connection->escapeLike($prefix) . '%', 'LIKE');
       }
+      $query->range(0, 1);
+      return $query->execute()->fetchField();
     }
-    if (isset($uri)) {
-      $menuLinkStorage = $this->entityTypeManager->getStorage('menu_link_content');
-      $menuLLinkIds = $menuLinkStorage->getQuery()
-        ->condition('link.uri', $uri)
-        ->condition('menu_name', (string) $prefix, $op)
-        ->range(0, 1)
-        ->execute();
-      /** @var \Drupal\Core\Menu\MenuLinkInterface $menuLink */
-      if ($menuLLinkIds && ($menuLink = $menuLinkStorage->load(reset($menuLLinkIds)))) {
-        return $menuLink->getMenuName();
-      }
-    }
-    return '';
   }
 
   /**
