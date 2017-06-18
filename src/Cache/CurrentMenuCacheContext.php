@@ -2,10 +2,9 @@
 
 namespace Drupal\current_menu\Cache;
 
-use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Cache\Context\CacheContextInterface;
-use Drupal\Core\Database\Connection;
+use Drupal\Core\Menu\MenuLinkManagerInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 
 class CurrentMenuCacheContext implements CacheContextInterface {
@@ -16,13 +15,18 @@ class CurrentMenuCacheContext implements CacheContextInterface {
   protected $routeMatch;
 
   /**
-   * @var \Drupal\Core\Database\Connection
+   * @var \Drupal\Core\Menu\MenuLinkManagerInterface
    */
-  protected $connection;
+  protected $menuLinkManager;
 
-  public function __construct(RouteMatchInterface $routeMatch, Connection $connection) {
+  /**
+   * @var array
+   */
+  protected $cache;
+
+  public function __construct(RouteMatchInterface $routeMatch, MenuLinkManagerInterface $menuLinkManager) {
     $this->routeMatch = $routeMatch;
-    $this->connection = $connection;
+    $this->menuLinkManager = $menuLinkManager;
   }
 
   /**
@@ -37,21 +41,26 @@ class CurrentMenuCacheContext implements CacheContextInterface {
    */
   public function getContext($prefix = NULL, $op = 'STARTS_WITH') {
     if ($routeName = $this->routeMatch->getRouteName()) {
-      $paramKey = '';
-      if ($routeParameters = $this->routeMatch->getRawParameters()->all()) {
-        asort($routeParameters);
-        $paramKey = UrlHelper::buildQuery($routeParameters);
+      $n = strlen($prefix);
+      $prefix = (string) $prefix;
+      $routeParameters = $this->routeMatch->getRawParameters()->all();
+      asort($routeParameters);
+      $key = serialize($routeParameters);
+      $storage = &$this->cache[$routeName][$key][$prefix][$op];
+      if (!isset($storage)) {
+        $storage = '';
+        foreach ($this->menuLinkManager->loadLinksByRoute($routeName, $routeParameters) as $link) {
+          $equals = ($op === '=' && $link->getMenuName() === $prefix);
+          $matches = ($op === 'STARTS_WITH' && (!$n || substr($link->getMenuName(), 0, $n) === $prefix));
+          if ($equals || $matches) {
+            $storage = $link->getMenuName();
+            break;
+          }
+        }
       }
-      $query = $this->connection->select('menu_tree', 'm');
-      $query->addField('m', 'menu_name');
-      $query->condition('route_name', $routeName);
-      $query->condition('route_param_key', $paramKey);
-      if ($prefix) {
-        $query->condition('menu_name', $this->connection->escapeLike($prefix) . '%', 'LIKE');
-      }
-      $query->range(0, 1);
-      return $query->execute()->fetchField();
+      return $storage;
     }
+    return '';
   }
 
   /**
