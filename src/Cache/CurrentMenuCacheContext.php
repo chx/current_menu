@@ -49,9 +49,13 @@ class CurrentMenuCacheContext implements CacheContextInterface {
       if (!isset($storage)) {
         $storage = '';
         foreach ($this->menuLinkManager->loadLinksByRoute($routeName, $routeParameters) as $link) {
-          $actual = $op === 'STARTS_WITH' ? substr($link->getMenuName(), 0, $n) : $link->getMenuName();
-          if ($actual === $prefix) {
-            $storage = $link->getMenuName();
+          $menuName = $link->getMenuName();
+          $comparisonValue = $menuName;
+          if ($op === 'STARTS_WITH') {
+            $comparisonValue = substr($comparisonValue, 0, $n);
+          }
+          if ($comparisonValue === $prefix) {
+            $storage = $menuName;
             break;
           }
         }
