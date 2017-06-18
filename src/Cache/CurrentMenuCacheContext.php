@@ -45,8 +45,7 @@ class CurrentMenuCacheContext implements CacheContextInterface {
       $prefix = (string) $prefix;
       $routeParameters = $this->routeMatch->getRawParameters()->all();
       asort($routeParameters);
-      $key = serialize($routeParameters);
-      $storage = &$this->cache[$routeName][$key][$prefix][$op];
+      $storage = &$this->cache[$routeName][serialize($routeParameters)][$prefix][$op];
       if (!isset($storage)) {
         $storage = '';
         foreach ($this->menuLinkManager->loadLinksByRoute($routeName, $routeParameters) as $link) {
