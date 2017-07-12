@@ -1,0 +1,7 @@
+services:
+  cache_context.current_menu:
+    class: Drupal\current_menu\Cache\CurrentMenuCacheContext
+    arguments: ['@current_route_match', '@plugin.manager.menu.link']
+    tags:
+      - { name: cache.context }
+
