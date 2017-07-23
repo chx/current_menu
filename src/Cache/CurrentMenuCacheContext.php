@@ -40,17 +40,7 @@ class CurrentMenuCacheContext implements CacheContextInterface {
    * {@inheritdoc}
    */
   public function getContext($prefix = NULL, $op = 'STARTS_WITH') {
-    $return = '';
-    if ($routeName = $this->routeMatch->getRouteName()) {
-      $prefix = (string) $prefix;
-      $routeParameters = $this->routeMatch->getRawParameters()->all();
-      asort($routeParameters);
-      $return = &$this->cache[$routeName][serialize($routeParameters)][$prefix][$op];
-      if (!isset($return)) {
-        $return = $this->getMenuName($prefix, $op, $routeName, $routeParameters);
-      }
-    }
-    return $return;
+    return $this->getCurrentMenuFromRouteMatch($this->routeMatch, $prefix, $op);
   }
 
   /**
@@ -78,6 +68,26 @@ class CurrentMenuCacheContext implements CacheContextInterface {
       }
       if ($comparisonValue === $prefix) {
         return $menuName;
+      }
+    }
+    return '';
+  }
+
+  /**
+   * @param \Drupal\Core\Routing\RouteMatchInterface $routeMatch
+   * @param $prefix
+   * @param $op
+   * @return string
+   * @internal param $return
+   */
+  public function getCurrentMenuFromRouteMatch(RouteMatchInterface $routeMatch, $prefix = NULL, $op = 'STARTS_WITH') {
+    if ($routeName = $routeMatch->getRouteName()) {
+      $prefix = (string) $prefix;
+      $routeParameters = $this->routeMatch->getRawParameters()->all();
+      asort($routeParameters);
+      $return = &$this->cache[$routeName][serialize($routeParameters)][$prefix][$op];
+      if (!isset($return)) {
+        $return = $this->getMenuName($prefix, $op, $routeName, $routeParameters);
       }
     }
     return '';
