@@ -81,6 +81,7 @@ class CurrentMenuCacheContext implements CacheContextInterface {
    * @internal param $return
    */
   public function getCurrentMenuFromRouteMatch(RouteMatchInterface $routeMatch, $prefix = NULL, $op = 'STARTS_WITH') {
+    $return = '';
     if ($routeName = $routeMatch->getRouteName()) {
       $prefix = (string) $prefix;
       $routeParameters = $this->routeMatch->getRawParameters()->all();
@@ -90,7 +91,7 @@ class CurrentMenuCacheContext implements CacheContextInterface {
         $return = $this->getMenuName($prefix, $op, $routeName, $routeParameters);
       }
     }
-    return '';
+    return $return;
   }
 
 }
